@@ -3,7 +3,7 @@ export const access = "admin";
 export const methods = ["POST"];
 export default async function(req,res) {
   const {season_id,confirmation}=req.body||{};
-  if(!season_id||confirmation!=="ARCHIVE")return res.status(400).json({error:"Type ARCHIVE to confirm force-archiving this PTS season."});
+  if(!season_id||confirmation!=="ARCHIVE")return res.status(400).json({error:"Type ARCHIVE to confirm force-archiving this TSW season."});
   const {rows}=await db.query("SELECT * FROM seasons WHERE id=$1",[season_id]);
   const season=rows[0];if(!season)return res.status(404).json({error:"Season not found"});
   if(season.status==="archived")return res.status(409).json({error:"Season is already archived."});
