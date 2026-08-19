@@ -1,0 +1,4 @@
+import { db } from "hatchable";
+export const access = "admin";
+export const methods = ["POST"];
+export default async function(req,res){const b=req.body||{};if(!b.id||!b.name)return res.status(400).json({error:"id and name are required"});const {rows}=await db.query("UPDATE teams SET name=$2,short_name=$3,crest_url=$4,secondary_crest_url=$5,home_color=$6,away_color=$7,manager=$8 WHERE id=$1 RETURNING *",[b.id,b.name,b.short_name||null,b.crest_url||null,b.secondary_crest_url||null,b.home_color||"#22c55e",b.away_color||"#0f172a",b.manager||null]);if(!rows[0])return res.status(404).json({error:"Team not found"});res.json(rows[0]);}

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PTS — Premier Touch Soccer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <header class="site-header">
+    <a class="brand" href="#/">
+      <div class="logo"><img id="siteLogo" alt="PTS logo"><span id="logoFallback">PTS</span></div>
+      <div class="name">PTS<small>Premier Touch Soccer</small></div>
+    </a>
+    <div class="header-controls"><button class="theme-toggle" id="themeToggle">Light mode</button><div id="topbarActions"></div></div>
+  </header>
+  <nav class="top-nav" id="nav" aria-label="Primary navigation"></nav>
+  <main class="main">
+    <div class="page-heading"><h1 id="pageTitle">Dashboard</h1><div class="crumbs" id="pageCrumbs"></div></div>
+    <div class="content" id="content"></div>
+  </main>
+</div>
+<div id="modalRoot"></div><div id="toastRoot"></div>
+<script src="/app.js"></script><script src="/pts.js"></script><script src="/lifecycle.js"></script><script src="/profiles.js"></script><script src="/transfers.js"></script><script src="/club-awards.js"></script><script src="/admin-shell.js"></script><script src="/brand-settings.js"></script><script src="/news-delete.js"></script>
+</body></html>

@@ -1,0 +1,5 @@
+# Hatchable project manifest. This file marks the folder as a
+# Hatchable project and declares the services it uses.
+# Reference: https://hatchable.com/docs/developers/config
+name = "Soccer League Manager"
+description = "League tables, matches, teams, players, ratings, and TOTW for a soccer league platform"

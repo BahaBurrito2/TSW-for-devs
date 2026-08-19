@@ -1,0 +1,3 @@
+CREATE TABLE IF NOT EXISTS site_settings (key TEXT PRIMARY KEY, value TEXT, updated_at TIMESTAMP NOT NULL DEFAULT now());
+ALTER TABLE leagues ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','archived'));
+ALTER TABLE leagues ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP;
