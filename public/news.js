@@ -1,13 +1,12 @@
 /* ============================================================
-   TSW — News
-   Instagram-style vertical feed: image-first cards, newest
-   first, lazy images, local file uploads, admin edit/delete,
-   and a fullscreen lightbox with prev/next.
+   Roball — Instagram-style news feed (FotMob-adjacent, original).
+   Public read-only feed; admin create/edit/delete lives here and
+   is hidden from visitors via the body.is-admin class.
    ============================================================ */
 (function () {
-  const API = window.__HATCHABLE__.api;
   const C = document.getElementById('content');
-  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const API = window.__HATCHABLE__.api;
 
   async function api(path, method, body) {
     const r = await fetch(API + path, {
@@ -20,67 +19,14 @@
     return d;
   }
 
-  const CATEGORIES = ['Announcement', 'Match Report', 'Transfer', 'Awards', 'Event', 'Featured'];
+  const CATEGORIES = ['Announcement', 'Match Report', 'Transfer', 'Interview', 'Awards', 'Community'];
 
-  window.renderNews = async () => {
-    window.setHeader('News', 'Club updates & announcements', '');
-    C.innerHTML = '<div class="news-feed"><div class="empty">Loading…</div></div>';
-    let posts = [];
-    try { posts = await api('/news'); } catch (x) {
-      C.innerHTML = `<div class="news-feed"><div class="empty"><h3>Could not load posts</h3><p>${esc(x.message)}</p></div></div>`;
-      return;
-    }
-    posts = Array.isArray(posts) ? posts : [];
-    C.innerHTML = `
-      <div class="news-feed">
-        <div class="feed-toolbar"><button class="btn primary admin-only" id="newPostBtn">New post</button></div>
-        ${posts.length ? posts.map(postHtml).join('') : `
-        <div class="empty">
-          <h3>No posts yet</h3>
-          <p>The feed is quiet. Publish the first post — an announcement, match report or transfer.</p>
-        </div>`}
-      </div>
-    `;
-    const btn = document.getElementById('newPostBtn');
-    if (btn) btn.onclick = () => postModal(null, posts);
-    C.querySelectorAll('.feed-image').forEach(img => img.addEventListener('click', () => openLightbox(posts, posts.findIndex(p => p.id === Number(img.dataset.id)))));
-    C.querySelectorAll('[data-edit-post]').forEach(b => b.onclick = () => {
-      const p = posts.find(x => String(x.id) === b.dataset.editPost);
-      if (p) postModal(p, posts);
-    });
-    C.querySelectorAll('[data-delete-post]').forEach(b => b.onclick = () => {
-      const p = posts.find(x => String(x.id) === b.dataset.deletePost);
-      if (p) deletePost(p);
-    });
-  };
-
-  function postHtml(p) {
-    return `
-      <article class="feed-post" data-news-id="${p.id}">
-        <header>
-          <span class="feed-mark">TSW</span>
-          <div class="feed-name">
-            <b>Touch Soccer World</b>
-            <small>${timeAgo(p.published_at || p.created_at)}</small>
-          </div>
-          ${p.featured ? '<span class="badge pinned-mark">Pinned</span>' : ''}
-          <span class="badge faint">${esc(p.category || 'Announcement')}</span>
-        </header>
-        ${p.cover_url ? `<img class="feed-image" data-id="${p.id}" loading="lazy" src="${esc(p.cover_url)}" alt="${esc(p.title)}">` : ''}
-        <div class="feed-body">
-          <h2>${esc(p.title)}</h2>
-          <p>${esc(p.body)}</p>
-        </div>
-        <footer>
-          <span>${esc(p.category || 'Announcement')} · ${timeAgo(p.published_at || p.created_at)}</span>
-          <span class="foot-right">
-            <button class="btn sm admin-only" data-edit-post="${p.id}">Edit</button>
-            <button class="btn sm danger admin-only" data-delete-post="${p.id}">Delete</button>
-          </span>
-        </footer>
-      </article>`;
+  function fmtDate(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
   }
-
   function timeAgo(ts) {
     if (!ts) return '';
     const d = new Date(ts);
@@ -90,148 +36,215 @@
     if (s < 3600) return Math.floor(s / 60) + 'm ago';
     if (s < 86400) return Math.floor(s / 3600) + 'h ago';
     if (s < 86400 * 7) return Math.floor(s / 86400) + 'd ago';
-    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
+    return fmtDate(ts);
+  }
+  const nl2br = (s) => esc(s).replace(/\n/g, '<br>');
+
+  const MARK = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.2"/><path d="M12 7.2l3.4 2.4-1.3 4h-4.2l-1.3-4z" fill="currentColor" stroke="none"/></svg>';
+
+  /* ---------- Feed ---------- */
+  window.renderNews = async function () {
+    C.innerHTML = '<div class="empty">Loading news…</div>';
+    const posts = await api('/news').catch(() => []);
+    const imagePosts = posts.filter((p) => p.cover_url);
+
+    C.innerHTML = `
+      <div class="news-feed">
+        <div class="feed-toolbar">
+          <button class="btn sm primary admin-only" id="newPostBtn">+ New post</button>
+        </div>
+        ${posts.length
+          ? posts.map((p, i) => postCard(p, i)).join('')
+          : `<div class="card"><div class="empty"><h3>No news yet</h3><p>Match reports, announcements and awards will appear here.</p></div></div>`}
+      </div>`;
+
+    const newBtn = document.getElementById('newPostBtn');
+    if (newBtn) newBtn.addEventListener('click', () => openPostModal(null));
+
+    C.querySelectorAll('[data-edit-post]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const post = posts.find((x) => String(x.id) === String(b.dataset.editPost));
+        if (post) openPostModal(post);
+      });
+    });
+    C.querySelectorAll('[data-delete-post]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const post = posts.find((x) => String(x.id) === String(b.dataset.deletePost));
+        if (post) deletePost(post);
+      });
+    });
+    C.querySelectorAll('[data-post-image]').forEach((img) => {
+      img.addEventListener('click', () => openLightbox(imagePosts, img.dataset.postImage));
+    });
+  };
+
+  function postCard(p, i) {
+    return `
+      <article class="feed-post">
+        <header>
+          <span class="feed-mark">${MARK}</span>
+          <div class="feed-name">
+            <b>Roball</b>
+            <small>${timeAgo(p.published_at || p.created_at)}${p.category ? ' · ' + esc(p.category) : ''}</small>
+          </div>
+          ${p.featured ? '<span class="badge pinned-mark">Featured</span>' : `<span class="badge faint">${esc(p.category || 'News')}</span>`}
+        </header>
+        ${p.cover_url ? `<img class="feed-image" src="${esc(p.cover_url)}" alt="${esc(p.title)}" loading="lazy" data-post-image="${p.id}">` : ''}
+        <div class="feed-body">
+          <h2>${esc(p.title)}</h2>
+          <p>${nl2br(p.body)}</p>
+        </div>
+        <footer>
+          <span>${esc(p.category || 'News')} · ${timeAgo(p.published_at || p.created_at)}</span>
+          <span class="admin-only" style="display:inline-flex;gap:6px">
+            <button class="btn sm" data-edit-post="${p.id}">Edit</button>
+            <button class="btn sm danger" data-delete-post="${p.id}">Delete</button>
+          </span>
+        </footer>
+      </article>`;
   }
 
-  /* ---------- Post modal (create + edit) ---------- */
-  function postModal(post, posts) {
-    const isEdit = !!post;
+  /* ---------- Create / edit ---------- */
+  function openPostModal(post) {
     window.openModal(`
-      <h3>${isEdit ? 'Edit post' : 'New post'}</h3>
+      <h3>${post ? 'Edit post' : 'New post'}</h3>
       <form id="postForm">
-        <div class="field"><label>Headline</label><input name="title" required value="${isEdit ? esc(post.title) : ''}"></div>
-        <div class="field"><label>Caption</label><textarea name="body" rows="4" required>${isEdit ? esc(post.body) : ''}</textarea></div>
-        <div class="field"><label>Image</label>
-          <div class="drop-zone" id="dropZone">
-            <div id="dropHint">${isEdit && post.cover_url ? 'Replace image —' : ''} Drag & drop an image here, or click to choose a file</div>
-            <div id="dropPreview"></div>
-          </div>
-          <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp" style="display:none">
-          <input type="hidden" name="file" id="fileSlot">
-          <input type="hidden" name="cover_raw" value="${isEdit ? esc(post.cover_url_raw || '') : ''}">
+        <div class="field"><label>Headline</label><input name="title" required value="${post ? esc(post.title) : ''}" placeholder="e.g. Roball Cup draw announced"></div>
+        <div class="field"><label>Caption</label><textarea name="body" rows="4" required placeholder="The story behind the headline…">${post ? esc(post.body) : ''}</textarea></div>
+        <div class="field"><label>Category</label>
+          <select name="category">${CATEGORIES.map((c) => `<option ${post && post.category === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
         </div>
-        <div class="field"><label>Or image URL</label><input name="cover_url" placeholder="https://…" value="${isEdit && !post.cover_url_raw ? esc(post.cover_url || '') : ''}"></div>
-        <div class="form-row">
-          <div class="field"><label>Category</label>
-            <select name="category">${CATEGORIES.map(c => `<option ${(!isEdit && c === 'Announcement') || (isEdit && c === post.category) ? 'selected' : ''}>${c}</option>`).join('')}</select>
+        <div class="field"><label>Cover image</label>
+          <div class="dropzone" id="postDrop">
+            <div id="postPreview" class="drop-preview"></div>
+            <button type="button" class="btn sm" id="postChoose">Choose file</button>
+            <span class="subtle">or drag &amp; drop an image</span>
+            <input name="file" id="postFile" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
           </div>
         </div>
-        <label class="check"><input type="checkbox" name="featured" ${isEdit && post.featured ? 'checked' : ''}> Pin this post to the top</label>
-        <div class="modal-actions">
-          <button type="button" class="btn ghost" data-close-modal>Cancel</button>
-          <button class="btn primary">${isEdit ? 'Save changes' : 'Publish'}</button>
-        </div>
+        <div class="field"><label>Or image URL</label><input name="url" value="${post ? esc(post.cover_url_raw || post.cover_url || '') : ''}" placeholder="https://…"></div>
+        <div class="modal-actions"><button type="button" class="btn ghost" data-close-modal>Cancel</button><button class="btn primary">${post ? 'Save changes' : 'Publish'}</button></div>
       </form>
-    `);
+    `, true);
 
-    const zone = document.getElementById('dropZone');
-    const input = document.getElementById('fileInput');
-    const preview = document.getElementById('dropPreview');
-    const fileSlot = document.getElementById('fileSlot');
-    let pickedFile = null;
+    const form = document.getElementById('postForm');
+    const input = document.getElementById('postFile');
+    const drop = document.getElementById('postDrop');
+    const preview = document.getElementById('postPreview');
+    const choose = document.getElementById('postChoose');
+    let pendingFile = null;
 
-    if (isEdit && post.cover_url) {
-      preview.innerHTML = `<img class="preview" src="${esc(post.cover_url)}" alt="">`;
-    }
-    const showFile = (file) => {
-      pickedFile = file;
-      fileSlot.value = 'picked';
-      preview.innerHTML = `<img class="preview" src="${URL.createObjectURL(file)}" alt="">`;
+    const show = (url) => {
+      preview.innerHTML = url
+        ? `<img src="${esc(url)}" alt="">`
+        : '<span class="subtle">No image selected</span>';
     };
-    zone.onclick = () => input.click();
-    input.onchange = () => { if (input.files[0]) showFile(input.files[0]); };
-    zone.ondragover = (e) => { e.preventDefault(); zone.classList.add('drag'); };
-    zone.ondragleave = () => zone.classList.remove('drag');
-    zone.ondrop = (e) => {
-      e.preventDefault();
-      zone.classList.remove('drag');
-      const f = e.dataTransfer.files && e.dataTransfer.files[0];
-      if (f && /^image\//.test(f.type)) showFile(f);
-    };
+    show(post ? post.cover_url : null);
 
-    document.getElementById('postForm').onsubmit = async (e) => {
+    choose.onclick = () => input.click();
+    input.addEventListener('change', () => {
+      if (input.files && input.files[0]) { pendingFile = input.files[0]; show(URL.createObjectURL(pendingFile)); }
+    });
+    ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('dragging'); }));
+    ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('dragging'); }));
+    drop.addEventListener('drop', (e) => {
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (!f || !f.type.startsWith('image/')) return;
+      pendingFile = f; show(URL.createObjectURL(f));
+    });
+
+    form.onsubmit = async (e) => {
       e.preventDefault();
-      const f = new FormData(e.target);
-      const btn = e.target.querySelector('button[type="submit"]');
-      btn.disabled = true;
+      const f = new FormData(form);
       try {
-        let cover_url = null;
-        if (pickedFile) cover_url = await window.tswUpload(pickedFile, { square: false });
-        else if (f.get('cover_url')) cover_url = f.get('cover_url');
-        else cover_url = f.get('cover_raw') || null;
-        const body = {
-          title: f.get('title'), body: f.get('body'), category: f.get('category'),
-          cover_url, featured: f.get('featured') === 'on', status: 'published'
-        };
-        if (isEdit) { body.id = post.id; await api('/pts/content', 'POST', { action: 'news_update', ...body }); }
-        else await api('/pts/content', 'POST', { action: 'news_save', ...body });
+        let cover = f.get('url') || null;
+        if (pendingFile) cover = await window.uploadImage(pendingFile, { square: false });
+        const body = { title: f.get('title'), body: f.get('body'), category: f.get('category') || 'Announcement', cover_url: cover };
+        if (post) await api('/pts/content', 'POST', { action: 'news_update', id: post.id, ...body });
+        else await api('/pts/content', 'POST', { action: 'news_save', ...body, status: 'published', featured: post ? post.featured : false });
         window.closeModal();
-        window.toast(isEdit ? 'Post updated' : 'Post published', 'ok');
+        window.toast(post ? 'Post updated' : 'Post published', 'ok');
         window.renderNews();
-      } catch (x) { window.toast(x.message, 'error'); btn.disabled = false; }
+      } catch (x) { window.toast(x.message, 'error'); }
     };
   }
 
+  /* ---------- Delete ---------- */
   function deletePost(post) {
-    window.confirmModal('Delete "' + post.title + '"?', 'This removes the post permanently and cannot be undone.', 'DELETE', async (word) => {
-      await api('/pts/content', 'POST', { action: 'news_delete', id: post.id, confirmation: word });
-      window.closeModal(); window.toast('Post deleted', 'ok');
-      window.renderNews();
-    }, true);
+    window.confirmModal(
+      'Delete this post?',
+      'This permanently removes the post and its image from the feed. This cannot be undone.',
+      'DELETE',
+      async (word) => {
+        await api('/pts/content', 'POST', { action: 'news_delete', id: post.id, confirmation: word });
+        window.closeModal();
+        window.toast('Post deleted', 'ok');
+        window.renderNews();
+      },
+      true
+    );
   }
 
   /* ---------- Lightbox ---------- */
-  function openLightbox(posts, index) {
+  function openLightbox(imagePosts, startId) {
+    let i = imagePosts.findIndex((p) => String(p.id) === String(startId));
+    if (i < 0) i = 0;
     const root = document.getElementById('lightboxRoot');
-    const withImages = posts.filter(p => p.cover_url);
-    let idx = Math.max(0, withImages.findIndex(p => p.id === posts[index].id));
+
+    const next = () => { i = (i + 1) % imagePosts.length; draw(); };
+    const prev = () => { i = (i - 1 + imagePosts.length) % imagePosts.length; draw(); };
 
     function draw() {
-      const p = withImages[idx];
+      const p = imagePosts[i];
       root.innerHTML = `
         <div class="lightbox">
           <div class="lb-top">
-            <span class="lb-cat">${esc(p.category || 'Announcement')}</span>
             <span class="lb-title">${esc(p.title)}</span>
-            <span class="lb-count">${idx + 1} / ${withImages.length}</span>
+            <span class="lb-count">${i + 1} / ${imagePosts.length}</span>
             <button class="btn sm ghost" id="lbClose">Close</button>
           </div>
-          <div class="lb-stage">
+          <div class="lb-stage" id="lbStage">
+            ${imagePosts.length > 1 ? '<button class="lb-nav prev" id="lbPrev" aria-label="Previous">‹</button>' : ''}
             <img src="${esc(p.cover_url)}" alt="${esc(p.title)}">
-            <div class="lb-caption">${esc(p.body)}</div>
-            ${withImages.length > 1 ? `
-              <button class="lb-nav prev" id="lbPrev">‹</button>
-              <button class="lb-nav next" id="lbNext">›</button>` : ''}
+            ${imagePosts.length > 1 ? '<button class="lb-nav next" id="lbNext" aria-label="Next">›</button>' : ''}
+            ${p.body ? `<div class="lb-caption">${nl2br(p.body)}</div>` : ''}
           </div>
         </div>`;
-      document.getElementById('lbClose').onclick = close;
-      const prev = document.getElementById('lbPrev');
-      const next = document.getElementById('lbNext');
-      if (prev) prev.onclick = (e) => { e.stopPropagation(); idx = (idx - 1 + withImages.length) % withImages.length; draw(); };
-      if (next) next.onclick = (e) => { e.stopPropagation(); idx = (idx + 1) % withImages.length; draw(); };
+      root.querySelector('#lbClose').onclick = closeLightbox;
+      const pv = root.querySelector('#lbPrev');
+      const nx = root.querySelector('#lbNext');
+      if (pv) pv.onclick = prev;
+      if (nx) nx.onclick = next;
+
+      // Touch swipe between images.
+      const stage = root.querySelector('#lbStage');
+      let sx = null;
+      stage.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; }, { passive: true });
+      stage.addEventListener('touchend', (e) => {
+        if (sx === null) return;
+        const dx = e.changedTouches[0].clientX - sx;
+        if (Math.abs(dx) > 42) (dx < 0 ? next() : prev());
+        sx = null;
+      }, { passive: true });
     }
 
-    let touchX = null;
-    const close = () => { root.innerHTML = ''; document.removeEventListener('keydown', onKey); };
     const onKey = (e) => {
-      if (e.key === 'Escape') close();
-      if (e.key === 'ArrowLeft' && withImages.length > 1) { idx = (idx - 1 + withImages.length) % withImages.length; draw(); }
-      if (e.key === 'ArrowRight' && withImages.length > 1) { idx = (idx + 1) % withImages.length; draw(); }
+      if (e.key === 'Escape') closeLightbox();
+      else if (e.key === 'ArrowLeft' && imagePosts.length > 1) prev();
+      else if (e.key === 'ArrowRight' && imagePosts.length > 1) next();
     };
-    root.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
-    root.addEventListener('touchend', (e) => {
-      if (touchX === null) return;
-      const dx = e.changedTouches[0].clientX - touchX;
-      if (Math.abs(dx) > 40 && withImages.length > 1) {
-        idx = dx < 0 ? (idx + 1) % withImages.length : (idx - 1 + withImages.length) % withImages.length;
-        draw();
-      }
-      touchX = null;
-    }, { passive: true });
+    document.addEventListener('keydown', onKey);
+    window.__lbCleanup = () => document.removeEventListener('keydown', onKey);
 
     draw();
-    document.addEventListener('keydown', onKey);
   }
 
-  if (location.hash.startsWith('#/news')) window.renderNews();
+  function closeLightbox() {
+    document.getElementById('lightboxRoot').innerHTML = '';
+    if (window.__lbCleanup) { window.__lbCleanup(); window.__lbCleanup = null; }
+  }
+
+  // Deep links: app.js boots before this script, so re-run the router if we
+  // landed straight on #/news on first load.
+  if ((location.hash || '#/').replace(/^#\//, '').split('/')[0] === 'news' && window.route) window.route();
 })();

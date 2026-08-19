@@ -37,7 +37,7 @@ export default async function (req, res) {
       rows.splice(start,group.length,...group);
     } start=end;
   }
-  const table=rows.map((r,i)=>({...r,position:i+1,zone:i===0?"champion":league.division_code==="D2"&&i<2?"promotion":league.division_code==="D1"&&i>=6?"relegation":null}));
+  const table=rows.map((r,i)=>({...r,position:i+1,zone:i===0?"champion":league.division_code!=="D1"&&i<2?"promotion":league.division_code!=="D4"&&i>=6?"relegation":null}));
   const unresolved=table.filter((r,i)=>i&&r.pts===table[i-1].pts&&r.gd===table[i-1].gd&&r.gf===table[i-1].gf);
   res.json({league,table,playoff_may_be_required:unresolved.length>0});
 }
