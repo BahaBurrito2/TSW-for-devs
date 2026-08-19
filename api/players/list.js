@@ -28,6 +28,6 @@ export default async function (req, res) {
     res.json(await withMediaMany(rows, ["avatar_url"]));
     return;
   }
-  const { rows } = await db.query(`SELECT p.*, t.name AS team_name FROM players p LEFT JOIN teams t ON t.id = p.team_id ORDER BY t.name NULLS FIRST, p.name`);
-  res.json(await withMediaMany(rows, ["avatar_url"]));
+  const { rows } = await db.query(`SELECT p.*, t.name AS team_name, t.crest_url FROM players p LEFT JOIN teams t ON t.id = p.team_id ORDER BY t.name NULLS FIRST, p.name`);
+  res.json(await withMediaMany(rows, ["avatar_url", "crest_url"]));
 }

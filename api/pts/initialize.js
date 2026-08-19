@@ -15,6 +15,8 @@ export default async function (req, res) {
   const definitions = [
     ["TSW Division 1","D1","league","D1"],
     ["TSW Division 2","D2","league","D2"],
+    ["TSW Division 3","D3","league","D3"],
+    ["TSW Division 4","D4","league","D4"],
     ["TSW Cup","CUP","single_elimination",null],
     ["TSW Shield","SHIELD","two_leg","D1"],
     ["TSW Plate","PLATE","single_elimination","D2"]
@@ -23,9 +25,18 @@ export default async function (req, res) {
     sql: "INSERT INTO competitions (season_id,name,code,format,division_scope) VALUES ($1,$2,$3,$4,$5)",
     params: [season.id,name,code,format,scope]
   }));
-  statements.push({sql:"INSERT INTO leagues (name,season,format,relegation_spots,promotion_spots,season_id,division_code) VALUES ($1,$2,'single_round_robin',2,0,$3,'D1')",params:["TSW Division 1",season.name,season.id]});
-  statements.push({sql:"INSERT INTO leagues (name,season,format,relegation_spots,promotion_spots,season_id,division_code) VALUES ($1,$2,'single_round_robin',0,2,$3,'D2')",params:["TSW Division 2",season.name,season.id]});
+  // Division pyramid: D1 champions; D1-D3 relegate their bottom two up/down,
+  // D2-D4 promote their top two. 8 clubs per division, single round robin.
+  const divisions = [
+    ["TSW Division 1","D1",2,0],
+    ["TSW Division 2","D2",2,2],
+    ["TSW Division 3","D3",2,2],
+    ["TSW Division 4","D4",0,2]
+  ];
+  divisions.forEach(([name, code, rel, promo]) => {
+    statements.push({sql:"INSERT INTO leagues (name,season,format,relegation_spots,promotion_spots,season_id,division_code) VALUES ($1,$2,'single_round_robin',$3,$4,$5,$6)",params:[name,season.name,rel,promo,season.id,code]});
+  });
   await db.transaction(statements);
   const { rows: leagues } = await db.query("SELECT id,name,division_code FROM leagues WHERE season_id = $1 ORDER BY division_code",[season.id]);
-  res.json({ season, leagues, message:"TSW season created with empty Division 1 & Division 2 and the cup competitions. Add clubs before generating fixtures or draws." });
+  res.json({ season, leagues, message:"TSW season created with empty Divisions 1–4 and the cup competitions. Add clubs before generating fixtures or draws." });
 }

@@ -18,7 +18,12 @@ export default async function (req, res) {
     return;
   }
   const { rows } = await db.query(
-    `SELECT t.*, COUNT(p.id)::int AS player_count FROM teams t
+    `SELECT t.*, COUNT(p.id)::int AS player_count,
+       (SELECT lt.league_id FROM league_teams lt JOIN leagues lg ON lg.id = lt.league_id JOIN seasons s ON s.id = lg.season_id
+         WHERE lt.team_id = t.id AND s.status = 'active' LIMIT 1) AS league_id,
+       (SELECT lg.division_code FROM league_teams lt JOIN leagues lg ON lg.id = lt.league_id JOIN seasons s ON s.id = lg.season_id
+         WHERE lt.team_id = t.id AND s.status = 'active' LIMIT 1) AS division_code
+     FROM teams t
      LEFT JOIN players p ON p.team_id = t.id
      WHERE t.status = 'active'
      GROUP BY t.id ORDER BY t.name ASC`
