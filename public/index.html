@@ -2,26 +2,55 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PTS — Premier Touch Soccer</title>
+<title>TSW — Touch Soccer World</title>
+<meta name="description" content="Touch Soccer World — a community football league platform. Divisions, cups, tables, ratings, and more.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <div class="app-shell">
   <header class="site-header">
-    <a class="brand" href="#/">
-      <div class="logo"><img id="siteLogo" alt="PTS logo"><span id="logoFallback">PTS</span></div>
-      <div class="name">PTS<small>Premier Touch Soccer</small></div>
+    <a class="brand" href="#/" aria-label="TSW home">
+      <span class="logo" id="siteLogoBox">
+        <svg id="logoFallback" class="crest-svg" viewBox="0 0 64 64" aria-hidden="true">
+          <polygon points="32 4.5 56.5 18.3 56.5 45.7 32 59.5 7.5 45.7 7.5 18.3" fill="#1A1A1A" stroke="#F4F1DE" stroke-width="2.4"/>
+          <polygon points="32 10 51.6 21.2 51.6 42.8 32 54 12.4 42.8 12.4 21.2" fill="none" stroke="#F4F1DE" stroke-width="0.8" opacity="0.4"/>
+          <circle cx="32" cy="24.5" r="10" fill="none" stroke="#F4F1DE" stroke-width="1.1" opacity="0.6"/>
+          <path d="M25.6 19.6 Q28.7 23.6 32 19.6 Q35.3 15.6 38.4 19.6" fill="none" stroke="#F4F1DE" stroke-width="1.1" opacity="0.6"/>
+          <path d="M25.6 29.4 Q28.7 25.4 32 29.4 Q35.3 33.4 38.4 29.4" fill="none" stroke="#F4F1DE" stroke-width="1.1" opacity="0.6"/>
+          <text x="32" y="48.2" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="10.5" letter-spacing="1.4" fill="#F4F1DE">TSW</text>
+        </svg>
+        <img id="siteLogo" alt="TSW crest">
+      </span>
+      <span class="name">TSW<small>Touch Soccer World</small></span>
     </a>
-    <div class="header-controls"><button class="theme-toggle" id="themeToggle">Light mode</button><div id="topbarActions"></div></div>
+    <div class="header-controls" id="topbarActions"></div>
   </header>
   <nav class="top-nav" id="nav" aria-label="Primary navigation"></nav>
   <main class="main">
-    <div class="page-heading"><h1 id="pageTitle">Dashboard</h1><div class="crumbs" id="pageCrumbs"></div></div>
+    <div class="page-heading">
+      <div class="heading-line">
+        <h1 id="pageTitle">Dashboard</h1>
+        <div class="page-actions" id="pageActions"></div>
+      </div>
+      <div class="crumbs" id="pageCrumbs"></div>
+    </div>
     <div class="content" id="content"></div>
   </main>
 </div>
-<div id="modalRoot"></div><div id="toastRoot"></div>
-<script src="/app.js"></script><script src="/pts.js"></script><script src="/lifecycle.js"></script><script src="/profiles.js"></script><script src="/transfers.js"></script><script src="/club-awards.js"></script><script src="/admin-shell.js"></script><script src="/brand-settings.js"></script><script src="/news-delete.js"></script>
-</body></html>
+<nav class="tab-bar" id="tabBar" aria-label="Mobile navigation"></nav>
+<div id="modalRoot"></div>
+<div id="lightboxRoot"></div>
+<div id="toastRoot"></div>
+<script src="/app.js"></script>
+<script src="/control.js"></script>
+<script src="/news.js"></script>
+<script src="/awards.js"></script>
+<script src="/profiles.js"></script>
+<script src="/transfers.js"></script>
+<script src="/lifecycle.js"></script>
+<script src="/admin-shell.js"></script>
+<script src="/brand-settings.js"></script>
+</body>
+</html>

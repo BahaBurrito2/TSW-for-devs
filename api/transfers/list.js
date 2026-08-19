@@ -28,7 +28,7 @@ export default async function (req, res) {
      FROM transfers tr
      JOIN players p ON p.id = tr.player_id
      LEFT JOIN teams ft ON ft.id = tr.from_team_id
-     JOIN teams tt ON tt.id = tr.to_team_id
+     LEFT JOIN teams tt ON tt.id = tr.to_team_id
      ${where}
      ORDER BY ${orderBy}`,
     params

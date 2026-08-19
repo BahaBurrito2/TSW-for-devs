@@ -15,9 +15,9 @@ export default async function(req,res) {
   if(d1.length!==8||d2.length!==8)return res.status(400).json({error:"Both divisions need eight clubs."});
   const {rows:newRows}=await db.query("INSERT INTO seasons (name,minimum_rating_apps) VALUES ($1,$2) RETURNING *",[next_season_name,season.minimum_rating_apps]);const next=newRows[0];
   await db.transaction([
-    {sql:"INSERT INTO leagues (name,season,format,relegation_spots,promotion_spots,season_id,division_code) VALUES ('PTS Division 1',$1,'single_round_robin',2,0,$2,'D1')",params:[next.name,next.id]},
-    {sql:"INSERT INTO leagues (name,season,format,relegation_spots,promotion_spots,season_id,division_code) VALUES ('PTS Division 2',$1,'single_round_robin',0,2,$2,'D2')",params:[next.name,next.id]},
-    ...[["PTS Division 1","D1","league","D1"],["PTS Division 2","D2","league","D2"],["PTS Cup","CUP","single_elimination",null],["PTS Champions League","UCL","two_leg","D1"],["PTS Europa League","UEL","single_elimination","D2"]].map(x=>({sql:"INSERT INTO competitions (season_id,name,code,format,division_scope) VALUES ($1,$2,$3,$4,$5)",params:[next.id,...x]})),
+    {sql:"INSERT INTO leagues (name,season,format,relegation_spots,promotion_spots,season_id,division_code) VALUES ('TSW Division 1',$1,'single_round_robin',2,0,$2,'D1')",params:[next.name,next.id]},
+    {sql:"INSERT INTO leagues (name,season,format,relegation_spots,promotion_spots,season_id,division_code) VALUES ('TSW Division 2',$1,'single_round_robin',0,2,$2,'D2')",params:[next.name,next.id]},
+    ...[["TSW Division 1","D1","league","D1"],["TSW Division 2","D2","league","D2"],["TSW Cup","CUP","single_elimination",null],["TSW Shield","SHIELD","two_leg","D1"],["TSW Plate","PLATE","single_elimination","D2"]].map(x=>({sql:"INSERT INTO competitions (season_id,name,code,format,division_scope) VALUES ($1,$2,$3,$4,$5)",params:[next.id,...x]})),
     {sql:"UPDATE seasons SET status='archived',archived_at=now() WHERE id=$1",params:[season.id]}
   ]);
   const {rows:newLeagues}=await db.query("SELECT * FROM leagues WHERE season_id=$1",[next.id]); const n1=newLeagues.find(x=>x.division_code==="D1"),n2=newLeagues.find(x=>x.division_code==="D2");
